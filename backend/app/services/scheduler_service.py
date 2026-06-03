@@ -5,16 +5,18 @@ from sqlalchemy import select
 from telegram import Bot
 import os
 from datetime import datetime, timedelta
+import pytz
 
 class SchedulerService:
     def __init__(self, bot_token: str):
-        self.scheduler = AsyncIOScheduler()
+        self.tz = pytz.timezone("Asia/Kolkata")
+        self.scheduler = AsyncIOScheduler(timezone=self.tz)
         self.bot_token = bot_token
         self.bot = Bot(token=bot_token)
 
     async def send_daily_summary(self):
         async with SessionLocal() as session:
-            # For now, we'll send to all users. In production, respect user timezones.
+            # For now, we'll send to all users.
             query = select(User)
             result = await session.execute(query)
             users = result.scalars().all()
@@ -28,7 +30,7 @@ class SchedulerService:
 
     async def _generate_summary(self, session, user_id: int) -> str:
         # Fetch today's tasks
-        today = datetime.utcnow().date()
+        today = datetime.now(self.tz).date()
         tasks_query = select(Task).filter(Task.user_id == user_id, Task.status == "pending")
         tasks_result = await session.execute(tasks_query)
         tasks = tasks_result.scalars().all()
@@ -52,7 +54,7 @@ class SchedulerService:
         return summary
 
     def setup_jobs(self):
-        # Schedule daily summary at 8:00 AM UTC
+        # Schedule daily summary at 8:00 AM IST
         self.scheduler.add_job(self.send_daily_summary, 'cron', hour=8, minute=0)
 
     def start(self):

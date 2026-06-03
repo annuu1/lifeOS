@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import pytz
 from typing import Dict, Any
 from app.ai.grok_provider import GroqProvider
 from app.ai.prompts import EXTRACTION_PROMPT
@@ -7,9 +8,10 @@ from app.ai.prompts import EXTRACTION_PROMPT
 class ExtractionService:
     def __init__(self, ai_provider: GroqProvider):
         self.ai_provider = ai_provider
+        self.tz = pytz.timezone("Asia/Kolkata")
 
     async def extract(self, user_input: str) -> Dict[str, Any]:
-        current_time = datetime.utcnow().isoformat()
+        current_time = datetime.now(self.tz).isoformat()
         prompt = EXTRACTION_PROMPT.format(user_input=user_input, current_time=current_time)
         
         messages = [
