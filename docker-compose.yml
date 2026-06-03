@@ -9,6 +9,7 @@ services:
       - .env
     ports:
       - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     restart: always
 
   frontend:
@@ -17,6 +18,8 @@ services:
       dockerfile: frontend.Dockerfile
     ports:
       - "3000:3000"
+    environment:
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
     restart: always
