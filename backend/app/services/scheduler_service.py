@@ -2,7 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.db.database import SessionLocal
 from app.models.models import User, Task, Goal, HealthRecord
 from sqlalchemy import select
-from telegram import Bot
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 import os
 from datetime import datetime, timedelta
 import pytz
@@ -53,10 +53,6 @@ class SchedulerService:
         summary += "Have a great day!"
         return summary
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
-...
-
     async def check_pending_tasks(self):
         print(f"Checking for pending tasks at {datetime.now(self.tz)}...", flush=True)
         async with SessionLocal() as session:
@@ -94,7 +90,6 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
                             parse_mode="Markdown",
                             reply_markup=reply_markup
                         )
-                        # We change status to "notified" instead of "completed" so we know it is out but not yet acted upon
                         task.status = "notified" 
                         print(f"Successfully sent notification for task {task.id}.", flush=True)
                     except Exception as e:
