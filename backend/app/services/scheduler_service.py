@@ -53,11 +53,63 @@ class SchedulerService:
         summary += "Have a great day!"
         return summary
 
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+...
+
+    async def check_pending_tasks(self):
+        print(f"Checking for pending tasks at {datetime.now(self.tz)}...", flush=True)
+        async with SessionLocal() as session:
+            now = datetime.now(self.tz).replace(tzinfo=None)
+            query = select(Task).filter(Task.status == "pending", Task.schedule <= now)
+            result = await session.execute(query)
+            tasks = result.scalars().all()
+            
+            print(f"Found {len(tasks)} tasks to notify.", flush=True)
+            for task in tasks:
+                user_query = select(User).filter(User.id == task.user_id)
+                user_result = await session.execute(user_query)
+                user = user_result.scalars().first()
+                
+                if user:
+                    print(f"Sending notification for task {task.id} to {user.telegram_chat_id}...", flush=True)
+                    message = f"📌 *Task Reminder*\n\n*Title:* {task.title}\n*Description:* {task.description or 'No description'}\n\n*Status:* Pending"
+                    
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("✅ Done", callback_data=f"task_done_{task.id}"),
+                            InlineKeyboardButton("⏰ Later", callback_data=f"task_later_{task.id}")
+                        ],
+                        [
+                            InlineKeyboardButton("📅 Postpone", callback_data=f"task_postpone_{task.id}"),
+                            InlineKeyboardButton("❌ Skip", callback_data=f"task_skip_{task.id}")
+                        ]
+                    ]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    
+                    try:
+                        await self.bot.send_message(
+                            chat_id=user.telegram_chat_id, 
+                            text=message, 
+                            parse_mode="Markdown",
+                            reply_markup=reply_markup
+                        )
+                        # We change status to "notified" instead of "completed" so we know it is out but not yet acted upon
+                        task.status = "notified" 
+                        print(f"Successfully sent notification for task {task.id}.", flush=True)
+                    except Exception as e:
+                        print(f"Failed to send notification for task {task.id}: {e}", flush=True)
+            
+            await session.commit()
+
     def setup_jobs(self):
         # Schedule daily summary at 8:00 AM IST
         self.scheduler.add_job(self.send_daily_summary, 'cron', hour=8, minute=0)
+        # Check for pending tasks every 10 seconds for faster testing
+        self.scheduler.add_job(self.check_pending_tasks, 'interval', seconds=10)
 
     def start(self):
+        print("Scheduler is starting...", flush=True)
         self.setup_jobs()
         self.scheduler.start()
-        print("Scheduler started.")
+        print(f"Scheduler started with {len(self.scheduler.get_jobs())} jobs.", flush=True)

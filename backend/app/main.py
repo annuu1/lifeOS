@@ -27,8 +27,7 @@ async def lifespan(app: FastAPI):
     
     # Start scheduler
     print("Starting Scheduler...")
-    scheduler_service.setup_jobs()
-    scheduler_service.scheduler.start()
+    scheduler_service.start()
     
     print("Lifespan startup complete.")
     yield
