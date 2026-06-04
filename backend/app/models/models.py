@@ -19,8 +19,10 @@ class Task(Base):
     title = Column(String, index=True)
     description = Column(Text, nullable=True)
     schedule = Column(DateTime, nullable=True)
-    recurrence = Column(String, nullable=True) # e.g., "daily", "weekly"
-    status = Column(String, default="pending") # pending, completed, skipped, postponed
+    status = Column(String, default="pending") # pending, completed, skipped, postponed, notified
+    recurrence = Column(String, default="daily") 
+    recurrence_interval = Column(Integer, default=1)
+    recurrence_unit = Column(String, default="days") # hours, days, weeks
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

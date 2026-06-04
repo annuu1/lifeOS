@@ -7,7 +7,9 @@ class TaskBase(BaseModel):
     description: Optional[str] = None
     schedule: Optional[datetime] = None
     status: str = "pending"
-    recurrence: Optional[str] = None
+    recurrence: Optional[str] = "daily" # Default to daily as requested
+    recurrence_interval: Optional[int] = 1 # interval value
+    recurrence_unit: Optional[str] = "days" # hours, days, weeks
 
 class TaskCreate(TaskBase):
     user_id: int

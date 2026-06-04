@@ -90,8 +90,25 @@ class SchedulerService:
                             parse_mode="Markdown",
                             reply_markup=reply_markup
                         )
-                        task.status = "notified" 
-                        print(f"Successfully sent notification for task {task.id}.", flush=True)
+                        
+                        # Handle Recurrence
+                        if hasattr(task, 'recurrence') and task.recurrence and task.recurrence != "none":
+                            interval = getattr(task, 'recurrence_interval', 1) or 1
+                            unit = getattr(task, 'recurrence_unit', 'days') or 'days'
+                            
+                            if unit == "hours":
+                                delta = timedelta(hours=interval)
+                            elif unit == "weeks":
+                                delta = timedelta(weeks=interval)
+                            else: # days
+                                delta = timedelta(days=interval)
+                                
+                            task.schedule = (task.schedule or datetime.now(self.tz).replace(tzinfo=None)) + delta
+                            task.status = "pending" # Keep it pending for the next cycle
+                            print(f"Recurring task {task.id} rescheduled for {task.schedule}.", flush=True)
+                        else:
+                            task.status = "notified" 
+                            print(f"Successfully sent notification for task {task.id}.", flush=True)
                     except Exception as e:
                         print(f"Failed to send notification for task {task.id}: {e}", flush=True)
             
